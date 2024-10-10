@@ -2,8 +2,8 @@ DROP DATABASE IF EXISTS tracker_db;
 CREATE DATABASE tracker_db;
 
 CREATE TABLE departments (
-    id SERIAL PRIMAARY KEY,
-    name VARCHAR(30) UNIQUE NOT NULL,
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(30) UNIQUE NOT NULL
 );
 
 CREATE TABLE roles (
@@ -23,4 +23,3 @@ CREATE TABLE employees (
     FOREIGN KEY (role_id) REFERENCES roles(id),
     FOREIGN KEY (manager_id) REFERENCES employees(id)
 );
-
