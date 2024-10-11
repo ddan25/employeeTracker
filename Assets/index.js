@@ -36,6 +36,40 @@ async function addDepartment() {
     console.log(`Department "${name}" added successfully.`);
 }
 
+async function addRole() {
+    const departmentChoices = await client.query('SELECT id, name FROM departments');
+    const departmentOptions = departmentChoices.rows.map(row => ({
+        value: row.id,
+        name: row.name,
+    }));
+
+    const { name, salary, department_id } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'name',
+            message: 'Enter the role name:',
+        },
+        {
+            type: 'input',
+            name:'salary',
+            message: 'Enter the role salary:',
+            validate: (value) => {
+                if (isNaN(value) || value <= 0) {
+                    return 'Salary must be a positive number.';
+                }
+                return true;
+            },
+        },
+        {
+            type: 'list',
+            name: 'department_id',
+            message: 'Choose the department for the role:',
+            choices: departmentOptions,
+        },
+    ]);
+
+    const result = await client.query
+}
 
 
 

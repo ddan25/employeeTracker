@@ -9,3 +9,5 @@ SELECT * FROM roles
 SELECT * FROM employees
 
 INSERT INTO departments (name) VALUES ($1)
+
+SELECT id, name FROM departments
