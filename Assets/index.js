@@ -122,6 +122,41 @@ async function addEmployee() {
     console.log(`Added employee ${first_name} ${last_name} to the database.`);
 }
 
+async function updateEmployeeRole() {
+    const employeeChoices = await client.query('SELECT id, first_name, last_name FROM employee');
+    const employeeOptions = employeeChoices.rows.map(row => ({
+        value: row.id,
+        name: `${row.first_name} ${row.last_name}`,
+    }));
+
+    const roleChoices = await client.query('SELECT id, title FROM role');
+    const roleOptions = roleChoices.rows.map(row => ({
+        value: row.id,
+        name: row.title,
+    }));
+
+    const { employee_id, new_role_id } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'employee_id',
+            message: 'Choose the employee to update:',
+            choices: employeeOptions,
+        },
+        {
+            type: 'list',
+            name: 'new_role_id',
+            message: 'Choose the new role for the employee:',
+            choices: roleOptions,
+        }
+    ]);
+    await client.query(
+        'UPDATE employee SET role_id = $1 WHERE id = $2',
+        [new_role_id, employee_id]
+    );
+
+    console.log(`Updated employee role for ${employeeOptions.find(option => option.value === employee_id).name}`);ß
+}
+
 
 
 async function menu() {
