@@ -1,3 +1,5 @@
+import inquirer from 'inquirer';
+
 const client = new client ({
     user: 'postgres',
     host: 'localhost',
