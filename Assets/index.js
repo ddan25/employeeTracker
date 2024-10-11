@@ -1,8 +1,8 @@
 const client = new client ({
-    user: 'your_username',
+    user: 'postgres',
     host: 'localhost',
     database: 'tracker_db',
-    password: 'your_password',
+    password: sqlPassword,
     port: 5432,
 });
 
