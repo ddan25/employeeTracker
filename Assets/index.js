@@ -36,9 +36,8 @@ async function addDepartment() {
     console.log(`Department "${name}" added successfully.`);
 }
 
-async function addRole() {
-    
-}
+
+
 
 async function menu() {
     await inquirer.prompt({
