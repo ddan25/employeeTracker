@@ -70,6 +70,57 @@ async function addRole() {
 
     const result = await client.query
 }
+async function addEmployee() {
+    // Fetch departments and roles from the database
+    const departmentChoices = await client.query('SELECT id, name FROM departments');
+    const departmentOptions = departmentChoices.rows.map(row => ({
+        value: row.id,
+        name: row.name,
+    }));
+
+    const roleChoices = await client.query('SELECT id, title FROM role'); // Changed to 'title' to match the schema
+    const roleOptions = roleChoices.rows.map(row => ({
+        value: row.id,
+        name: row.title, // Use 'title' for roles
+    }));
+
+    // Prompt user for employee details
+    const { first_name, last_name, role_id, manager_id } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'first_name',
+            message: 'Enter the employee first name:',
+        },
+        {
+            type: 'input',
+            name: 'last_name',
+            message: 'Enter the employee last name:',
+        },
+        {
+            type: 'list',
+            name: 'role_id',
+            message: 'Choose the role for the employee:',
+            choices: roleOptions,
+        },
+        {
+            type: 'list',
+            name: 'manager_id',
+            message: 'Choose the manager for the employee (or select "None"):',
+            choices: [
+                ...departmentOptions,
+                { value: null, name: 'None' } // Option for no manager
+            ],
+        }
+    ]);
+
+    // Insert the new employee into the database
+    await client.query(
+        'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)',
+        [first_name, last_name, role_id, manager_id]
+    );
+
+    console.log(`Added employee ${first_name} ${last_name} to the database.`);
+}
 
 
 
