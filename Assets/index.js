@@ -1,29 +1,31 @@
 import inquirer from 'inquirer';
+import pkg from 'pg';
+const { Client } = pkg;
 
-const client = new client ({
+const dbClient = new Client({ // Rename 'client' to 'dbClient'
     user: 'postgres',
     host: 'localhost',
     database: 'tracker_db',
-    password: sqlPassword,
+    password: 'password', // Make sure sqlPassword is defined somewhere in your code
     port: 5432,
 });
 
 async function connectDB() {
-    await client.connect();
+    await dbClient.connect();
 }
 
 async function viewDepartments() {
-    const result = await client.query('SELECT * FROM departments');
+    const result = await dbClient.query('SELECT * FROM department'); // Fixed table name
     console.table(result.rows);
 }
 
 async function viewRoles() {
-    const result = await client.query('SELECT * FROM roles');
+    const result = await dbClient.query('SELECT * FROM role'); // Fixed table name
     console.table(result.rows);
 }
 
 async function viewEmployees() {
-    const result = await client.query('SELECT * FROM employees');
+    const result = await dbClient.query('SELECT * FROM employee'); // Fixed table name
     console.table(result.rows);
 }
 
@@ -34,12 +36,12 @@ async function addDepartment() {
         message: 'Enter the department name:',
     });
 
-    const result = await client.query('INSERT INTO departments (name) VALUES ($1)', [name]);
+    await dbClient.query('INSERT INTO department (name) VALUES ($1)', [name]); // Fixed table name
     console.log(`Department "${name}" added successfully.`);
 }
 
 async function addRole() {
-    const departmentChoices = await client.query('SELECT id, name FROM departments');
+    const departmentChoices = await dbClient.query('SELECT id, name FROM department'); // Fixed table name
     const departmentOptions = departmentChoices.rows.map(row => ({
         value: row.id,
         name: row.name,
@@ -53,7 +55,7 @@ async function addRole() {
         },
         {
             type: 'input',
-            name:'salary',
+            name: 'salary',
             message: 'Enter the role salary:',
             validate: (value) => {
                 if (isNaN(value) || value <= 0) {
@@ -70,23 +72,23 @@ async function addRole() {
         },
     ]);
 
-    const result = await client.query
+    await dbClient.query('INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)', [name, salary, department_id]); // Fixed table name
+    console.log(`Role "${name}" added successfully.`);
 }
+
 async function addEmployee() {
-    // Fetch departments and roles from the database
-    const departmentChoices = await client.query('SELECT id, name FROM departments');
+    const departmentChoices = await dbClient.query('SELECT id, name FROM department');
     const departmentOptions = departmentChoices.rows.map(row => ({
         value: row.id,
         name: row.name,
     }));
 
-    const roleChoices = await client.query('SELECT id, title FROM role'); // Changed to 'title' to match the schema
+    const roleChoices = await dbClient.query('SELECT id, title FROM role'); // Ensure you match the schema
     const roleOptions = roleChoices.rows.map(row => ({
         value: row.id,
-        name: row.title, // Use 'title' for roles
+        name: row.title,
     }));
 
-    // Prompt user for employee details
     const { first_name, last_name, role_id, manager_id } = await inquirer.prompt([
         {
             type: 'input',
@@ -110,13 +112,12 @@ async function addEmployee() {
             message: 'Choose the manager for the employee (or select "None"):',
             choices: [
                 ...departmentOptions,
-                { value: null, name: 'None' } // Option for no manager
+                { value: null, name: 'None' }
             ],
         }
     ]);
 
-    // Insert the new employee into the database
-    await client.query(
+    await dbClient.query(
         'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)',
         [first_name, last_name, role_id, manager_id]
     );
@@ -125,13 +126,13 @@ async function addEmployee() {
 }
 
 async function updateEmployeeRole() {
-    const employeeChoices = await client.query('SELECT id, first_name, last_name FROM employee');
+    const employeeChoices = await dbClient.query('SELECT id, first_name, last_name FROM employee');
     const employeeOptions = employeeChoices.rows.map(row => ({
         value: row.id,
         name: `${row.first_name} ${row.last_name}`,
     }));
 
-    const roleChoices = await client.query('SELECT id, title FROM role');
+    const roleChoices = await dbClient.query('SELECT id, title FROM role');
     const roleOptions = roleChoices.rows.map(row => ({
         value: row.id,
         name: row.title,
@@ -151,19 +152,18 @@ async function updateEmployeeRole() {
             choices: roleOptions,
         }
     ]);
-    await client.query(
+    
+    await dbClient.query(
         'UPDATE employee SET role_id = $1 WHERE id = $2',
         [new_role_id, employee_id]
     );
 
-    console.log(`Updated employee role for ${employeeOptions.find(option => option.value === employee_id).name}`);ß
+    console.log(`Updated employee role for ${employeeOptions.find(option => option.value === employee_id).name}.`);
 }
 
-
-
 async function menu() {
-    await inquirer.prompt({
-        tyoe: 'list',
+    const { action } = await inquirer.prompt({ // Fixed typo 'tyoe' to 'type'
+        type: 'list',
         name: 'action',
         message: 'What would you like to do?',
         choices: [
@@ -201,12 +201,12 @@ async function menu() {
             await updateEmployeeRole();
             break;
         case 'Exit':
-            client.end();
-            break;
+            await dbClient.end();
+            return; // Exit the function to prevent re-entering the menu
         default:
             console.log('Invalid option. Please try again.');
     }
-    menu();
+    menu(); // Loop back to the menu after completing the action
 }
 
 async function start() {
@@ -214,4 +214,4 @@ async function start() {
     menu();
 }
 
-start();
+start().catch(err => console.error('Error starting application:', err));
