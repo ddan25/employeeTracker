@@ -1,5 +1,7 @@
 import inquirer from 'inquirer';
 import { pool, connectToDb} from './connection.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 
 
