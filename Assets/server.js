@@ -40,50 +40,43 @@ async function addRole() {
         name: row.name,
     }));
 
-    const { first_name, last_name, role_id, manager_id } = await inquirer.prompt([
+    const { name, salary, department_id } = await inquirer.prompt([
         {
             type: 'input',
-            name: 'first_name',
-            message: 'Enter the employee first name:',
+            name: 'name',
+            message: 'Enter the role name:',
         },
         {
             type: 'input',
-            name: 'last_name',
-            message: 'Enter the employee last name:',
+            name: 'salary',
+            message: 'Enter the role salary:',
+            validate: (value) => {
+                if (isNaN(value) || value <= 0) {
+                    return 'Salary must be a positive number.';
+                }
+                return true;
+            },
         },
         {
             type: 'list',
-            name: 'role_id',
-            message: 'Choose the role for the employee:',
-            choices: roleOptions,
+            name: 'department_id',
+            message: 'Choose the department for the role:',
+            choices: departmentOptions,
         },
-        {
-            type: 'list',
-            name: 'manager_id',
-            message: 'Choose the manager for the employee (or select "None"):',
-            choices: [
-                ...departmentOptions,
-                { value: null, name: 'None' }
-            ],
-        }
     ]);
 
-    await dbClient.query(
-        'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)',
-        [first_name, last_name, role_id, manager_id]
-    );
-
-    console.log(`Added employee ${first_name} ${last_name} to the database.`);
+    await pool.query('INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)', [name, salary, department_id]);
+    console.log(`Role "${name}" added successfully.`);
 }
 
 async function updateEmployeeRole() {
-    const employeeChoices = await dbClient.query('SELECT id, first_name, last_name FROM employee');
+    const employeeChoices = await pool.query('SELECT id, first_name, last_name FROM employee');
     const employeeOptions = employeeChoices.rows.map(row => ({
         value: row.id,
         name: `${row.first_name} ${row.last_name}`,
     }));
 
-    const roleChoices = await dbClient.query('SELECT id, title FROM role');
+    const roleChoices = await pool.query('SELECT id, title FROM role');
     const roleOptions = roleChoices.rows.map(row => ({
         value: row.id,
         name: row.title,
@@ -104,7 +97,7 @@ async function updateEmployeeRole() {
         }
     ]);
     
-    await dbClient.query(
+    await pool.query(
         'UPDATE employee SET role_id = $1 WHERE id = $2',
         [new_role_id, employee_id]
     );
@@ -113,7 +106,7 @@ async function updateEmployeeRole() {
 }
 
 async function menu() {
-    const { action } = await inquirer.prompt({ // Fixed typo 'tyoe' to 'type'
+    const { action } = await inquirer.prompt({
         type: 'list',
         name: 'action',
         message: 'What would you like to do?',
@@ -152,17 +145,18 @@ async function menu() {
             await updateEmployeeRole();
             break;
         case 'Exit':
-            await dbClient.end();
+            await pool.end();
+            console.log('Disconnected from the database.');
             return; // Exit the function to prevent re-entering the menu
         default:
             console.log('Invalid option. Please try again.');
     }
-    menu(); // Loop back to the menu after completing the action
+    await menu(); // Loop back to the menu after completing the action
 }
 
 async function start() {
-    await connectDB();
-    menu();
+    await connectToDb();
+    await menu();
 }
 
 start().catch(err => console.error('Error starting application:', err));
