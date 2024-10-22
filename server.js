@@ -10,17 +10,17 @@ async function connectDB() {
 }
 
 async function viewDepartments() {
-    const result = await pool.query('SELECT * FROM department');
+    const result = await pool.query('SELECT * FROM departments');
     console.table(result.rows);
 }
 
 async function viewRoles() {
-    const result = await pool.query('SELECT * FROM role');
+    const result = await pool.query('SELECT * FROM roles');
     console.table(result.rows);
 }
 
 async function viewEmployees() {
-    const result = await pool.query('SELECT * FROM employee');
+    const result = await pool.query('SELECT * FROM employees');
     console.table(result.rows);
 }
 
@@ -31,12 +31,12 @@ async function addDepartment() {
         message: 'Enter the department name:',
     });
 
-    await pool.query('INSERT INTO department (name) VALUES ($1)', [name]);
+    await pool.query('INSERT INTO departments (name) VALUES ($1)', [name]);
     console.log(`Department "${name}" added successfully.`);
 }
 
 async function addRole() {
-    const departmentChoices = await pool.query('SELECT id, name FROM department');
+    const departmentChoices = await pool.query('SELECT id, name FROM departments');
     const departmentOptions = departmentChoices.rows.map(row => ({
         value: row.id,
         name: row.name,
@@ -67,18 +67,59 @@ async function addRole() {
         },
     ]);
 
-    await pool.query('INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)', [name, salary, department_id]);
+    await pool.query('INSERT INTO roles (title, salary, department_id) VALUES ($1, $2, $3)', [name, salary, department_id]);
     console.log(`Role "${name}" added successfully.`);
 }
 
+async function addEmployee() {
+    const roleChoices = await pool.query('SELECT id, title FROM roles');
+    const roleOptions = roleChoices.rows.map(row => ({
+        value: row.id,
+        name: row.title,
+    }));
+    const managerChoices = await pool.query('SELECT id, first_name, last_name FROM employees WHERE manager_id is null');
+    const managerOptions = managerChoices.rows.map(row => ({
+        value: row.id,
+        name: `${row.first_name} ${row.last_name}`,
+    }));
+    managerOptions.push({value:null, name: 'I AM Manager'})
+    const { first_name, last_name, role_id, manager_id } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'first_name',
+            message: 'Enter your first name:',
+        },
+        {
+            type: 'input',
+            name: 'last_name',
+            message: 'Enter your last name:',
+        },
+        {
+            type: 'list',
+            name: 'role_id',
+            message: 'Choose the role:',
+            choices: roleOptions,
+        },
+        {
+            type: 'list',
+            name: 'manager_id',
+            message: 'Choose who is their manager:',
+            choices: managerOptions,
+        },
+    ]);
+
+    await pool.query('INSERT INTO employees ( first_name, last_name, role_id, manager_id ) VALUES ($1, $2, $3, $4)', [ first_name, last_name, role_id, manager_id ]);
+    console.log(`${first_name}" added successfully.`);
+}
+
 async function updateEmployeeRole() {
-    const employeeChoices = await pool.query('SELECT id, first_name, last_name FROM employee');
+    const employeeChoices = await pool.query('SELECT id, first_name, last_name FROM employees');
     const employeeOptions = employeeChoices.rows.map(row => ({
         value: row.id,
         name: `${row.first_name} ${row.last_name}`,
     }));
 
-    const roleChoices = await pool.query('SELECT id, title FROM role');
+    const roleChoices = await pool.query('SELECT id, title FROM roles');
     const roleOptions = roleChoices.rows.map(row => ({
         value: row.id,
         name: row.title,
@@ -100,7 +141,7 @@ async function updateEmployeeRole() {
     ]);
     
     await pool.query(
-        'UPDATE employee SET role_id = $1 WHERE id = $2',
+        'UPDATE employees SET role_id = $1 WHERE id = $2',
         [new_role_id, employee_id]
     );
 

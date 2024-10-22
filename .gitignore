@@ -1,3 +1,4 @@
 .DS_store
 node_modules
 28-Stu_Mini-Project
+.env
